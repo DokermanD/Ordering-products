@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Ordering_products.Сontroller;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Ordering_products.Telegram
 {
@@ -12,6 +14,7 @@ namespace Ordering_products.Telegram
     {
         //Создаём подключение с токенам
         static TelegramBotClient client = new TelegramBotClient("5829168895:AAGTVjwNR_30142qDTvLq29wJNS3w5yXMxQ");
+        
 
         /// <summary>
         /// Запуск прослушки сервера Телеграм
@@ -26,8 +29,9 @@ namespace Ordering_products.Telegram
         //Основной метод получения сообщений от пользователя
         async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
         {
-            Console.WriteLine("получил ответ от сервака.");
-           
+            //Проверка входящих сообщений от сервера
+            InputMesageController inputMesageController = new InputMesageController();
+            inputMesageController.InputMesageAsunc(botClient, update);
         }
 
         //Метоб обработки ошибок
