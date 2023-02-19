@@ -10,20 +10,27 @@ namespace Ordering_products.DB
     public class ConectionDB
     {       
         public static SqlConnection Connection { get; private set; }
+
+        /// <summary>
+        /// Открываем подключение к базе данных
+        /// </summary>
         public static void ConectDB()
         {
             try
             {
                 //Создаём подключение к базе данных
                 SqlConnection connection = new SqlConnection(ConfigurationManager.ConnectionStrings["ProjectDB"].ConnectionString);
-                //Открываем подключение к базе данных
-                connection.Open();
                 Connection = connection;
+                Console.WriteLine("Подключение к базе успешно создано.");
+
+                //Открываем подключение к базе данных
+                Connection.Open();
+                
 
                 //Проверка открылось ли подключение
-                if (connection.State == ConnectionState.Open)
+                if (Connection.State == ConnectionState.Open)
                 {
-                    Console.WriteLine("Подключение к базе успешно создано и открыто.");
+                    Console.WriteLine("Подключение к базе успешно открыто.");
                 }
                 else
                 {
@@ -32,10 +39,27 @@ namespace Ordering_products.DB
             }
             catch (Exception e)
             {
-                Console.WriteLine("Ошибка при подключении базы данных!\n" + e.Message);
+                Console.WriteLine("Ошибка при открытии подключения к базе данных!\n" + e.Message);
             }
-           
-            
         }
+
+        /// <summary>
+        /// Закрываем подключение к базе данных
+        /// </summary>
+        public static void DisconnectDB()
+        {
+            Connection.Close();
+
+            //Проверка закрытия подключение
+            if (Connection.State == ConnectionState.Closed)
+            {
+                Console.WriteLine("Подключение к базе успешно закрыто.");
+            }
+            else
+            {
+                Console.WriteLine("Не закрылось подключение к базы данных!");
+            }
+        }
+
     }
 }
