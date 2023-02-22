@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Telegram.Bot.Types;
-using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
-using System.Threading.Tasks;
+﻿using Ordering_products.DB;
 using Ordering_products.Telegram;
+using System;
 using System.Linq;
-using Ordering_products.DB;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Ordering_products.Methods
 {
@@ -27,26 +24,31 @@ namespace Ordering_products.Methods
             switch (status)
             {
                 case "reg-0":
+                    botClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
                     botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Здравствуйте!\nДавайте пройдём быструю регистрацию.\nКак я могу к вам обращатся?", parseMode: ParseMode.Markdown);
                     AddMesageTextAsync(update, status);
                     break;
 
                 case "reg-1":
+                    DeleteMessageOld(update, botClient);
                     botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Как называется ваша организация?", parseMode: ParseMode.Markdown);
                     AddMesageTextAsync(update, status);
                     break;
 
                 case "reg-2":
-                    botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Адрес куда доставлять?", parseMode: ParseMode.Markdown);
+                    DeleteMessageOld(update, botClient);
+                    botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Укажите адрес доставки продуктов?", parseMode: ParseMode.Markdown);
                     AddMesageTextAsync(update, status);
                     break;
 
                 case "reg-3":
+                    DeleteMessageOld(update, botClient);
                     botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Укажите пожалуйста телефон для связи.", parseMode: ParseMode.Markdown);
                     AddMesageTextAsync(update, status);
                     break;
 
                 case "reg-4":
+                    DeleteMessageOld(update, botClient);
                     botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Отлично Вы прошли регистрацию!", parseMode: ParseMode.Markdown);
                     AddMesageTextAsync(update, status);
                     break;
@@ -60,9 +62,7 @@ namespace Ordering_products.Methods
         /// <param name="resultInputUser"></param>
         public static void AddMesageTextAsync(Update update, string status)
         {
-            //await Task.Run(() =>
-            //{
-                var check = true;
+            var check = true;
             //Проверка есть ли idChat в списке
             for (int i = 0; i < StartTgBot.UsersData.Count; i++)
             {
@@ -90,10 +90,11 @@ namespace Ordering_products.Methods
                 {
                     regStr = str;
                 }
-                //Пишем строку в базу данных
+                //Пишим строку в базу данных
                 RequestsDB.SetDataDB(update, "RegisteredUsers", regStr.Split('|')[0], regStr.Split('|')[1], regStr.Split('|')[2], regStr.Split('|')[3], regStr.Split('|')[4], DateTime.Now.ToString("MM/dd/yyyy").ToString());
             }
-                
+
+            //Если ID нет не в базе не в словаре, добавляем в лист UsersData
             if (check)
             {
                 lock (lockList)
@@ -101,7 +102,18 @@ namespace Ordering_products.Methods
                     StartTgBot.UsersData.Add(update.Message.Chat.Id.ToString());
                 }
             }
-            //});
+
+        }
+
+        /// <summary>
+        /// Метод удаляет 2 последних сообщения
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="botClient"></param>
+        public static void DeleteMessageOld(Update update, ITelegramBotClient botClient)
+        {
+            botClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId - 1);
+            botClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
         }
     }
 }

@@ -30,6 +30,7 @@ namespace Ordering_products.Сontroller
                 {
                     case "ok":
                         //Запуск подбора продуктов
+
                         break;
 
                     default:
