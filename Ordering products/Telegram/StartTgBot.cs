@@ -18,7 +18,7 @@ namespace Ordering_products.Telegram
     {
         //Создаём подключение с токеном
         static TelegramBotClient client = new TelegramBotClient("5829168895:AAGTVjwNR_30142qDTvLq29wJNS3w5yXMxQ");
-
+        
         //Временное хранение данных по регистрации новых клиентов
         public static List<string> UsersData = new List<string>();
         

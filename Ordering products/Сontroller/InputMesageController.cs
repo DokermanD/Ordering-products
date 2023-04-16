@@ -30,7 +30,7 @@ namespace Ordering_products.Сontroller
                 {
                     case "ok":
                         //Запуск подбора продуктов
-
+                        SelectionProducts.SelectProd(botClient, update, result);
                         break;
 
                     default:
@@ -42,7 +42,12 @@ namespace Ordering_products.Сontroller
             }
             else if (update.Type == UpdateType.CallbackQuery)//Ответ на кнопки коллбэк
             {
+                // 1 - Проверка ID в базе RegisteredUsers и его статуса.
+                var result = RequestsDB.CheckIdDataDB(update.CallbackQuery.Message.Chat.Id.ToString());
+                var callbackData = update.CallbackQuery.Data.ToString();
 
+                //Работаем с результатом
+                SelectionProducts.SelectProd(botClient, update, callbackData);
             }
 
             return Task.CompletedTask;

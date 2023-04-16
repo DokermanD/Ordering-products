@@ -2,6 +2,7 @@
 using Ordering_products.Telegram;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Text;
 using Telegram.Bot.Types;
@@ -113,6 +114,30 @@ namespace Ordering_products.DB
             ConectionDB.DisconnectDB();
 
             return result;
+        }
+
+        public static List<string> GetDataDB(string category)
+        {
+            List<string> selectDb = new List<string>(); 
+            string result = string.Empty;
+            //Открываем подключение
+            ConectionDB.ConectDB();
+            //Вытаскиваем все продукты по категории
+            SqlDataReader dataReader = null;
+            SqlCommand command = new SqlCommand($"SELECT NameProduct FROM TableProducts WHERE Catigory = N'{category}'", ConectionDB.Connection);
+            dataReader = command.ExecuteReader();
+            
+            while (dataReader.Read()) 
+            {
+                selectDb.Add(Convert.ToString(dataReader[0]));
+            }
+
+            //Закрываем датаридер
+            dataReader.Close();
+            //Закрываем подключение
+            ConectionDB.DisconnectDB();
+
+            return selectDb;
         }
     }
 }

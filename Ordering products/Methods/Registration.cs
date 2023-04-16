@@ -5,6 +5,7 @@ using System.Linq;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Ordering_products.Methods
 {
@@ -49,7 +50,14 @@ namespace Ordering_products.Methods
 
                 case "reg-4":
                     DeleteMessageOld(update, botClient);
-                    botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Отлично Вы прошли регистрацию!", parseMode: ParseMode.Markdown);
+                    InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(new[]
+                    {
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData(text: "Начать выбор продуктов", callbackData: "category")
+                        }
+                    });
+                    botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: "Отлично, Вы прошли регистрацию!\nМожно начинать выбор продуктов.", replyMarkup: replyKeyboardMarkup);
                     AddMesageTextAsync(update, status);
                     break;
             }
@@ -111,7 +119,7 @@ namespace Ordering_products.Methods
         /// <param name="update"></param>
         /// <param name="botClient"></param>
         public static void DeleteMessageOld(Update update, ITelegramBotClient botClient)
-        {
+        {            
             botClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId - 1);
             botClient.DeleteMessageAsync(update.Message.Chat.Id, update.Message.MessageId);
         }
