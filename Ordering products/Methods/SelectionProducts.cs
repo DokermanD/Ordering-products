@@ -6,6 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Ordering_products.DB;
+using Newtonsoft.Json.Linq;
 
 namespace Ordering_products.Methods
 {
@@ -55,8 +56,11 @@ namespace Ordering_products.Methods
             {
                 botClient.SendTextMessageAsync(chatId: update.CallbackQuery.Message.Chat.Id.ToString(), text: "Выберите пожалуйста категорию продукта.", replyMarkup: replyKeyboardMarkup);
             }
-
-            botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id.ToString(), text: "Выберите пожалуйста категорию продукта.", replyMarkup: replyKeyboardMarkup);
+            else
+            {
+                botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id.ToString(), text: "Выберите пожалуйста категорию продукта.", replyMarkup: replyKeyboardMarkup);
+            }
+            
         }
 
         /// <summary>
@@ -68,7 +72,7 @@ namespace Ordering_products.Methods
         public static void SelectProduct(ITelegramBotClient botClient, Update update, string product)
         {
             DeleteMessageOldCallback(update, botClient);
-            InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(new[] { GetProductDb(product) });
+            InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(GetProductDb(product));
 
             //Отправка сообщения в бота
             if (update.Type == UpdateType.CallbackQuery)
@@ -87,23 +91,44 @@ namespace Ordering_products.Methods
         /// </summary>
         /// <param name="product">Название категории продукта</param>
         /// <returns>Возвращает масив с названием продуктов</returns>
-        public static InlineKeyboardButton[] GetProductDb(string product)
+        public static InlineKeyboardButton[][] GetProductDb(string product)
         {
             //Получаем список продуктов из базы данных
             var listSelect = RequestsDB.GetDataDB(product);
 
-            InlineKeyboardButton[] inlineKeyboardButtons = new InlineKeyboardButton[(int)Math.Ceiling((double)listSelect.Count/3)];
+            InlineKeyboardButton[][] inlineKeyboardButtons = new InlineKeyboardButton[(int)Math.Ceiling((double)listSelect.Count / 3) + 1][];
 
-            for (int i = 0; i < inlineKeyboardButtons.Length; i++)
+            int a;
+            int schet = 0;
+            int countListProducts = listSelect.Count;
+
+            for (int i = 0; i < inlineKeyboardButtons.Length - 1; i++)
             {
-                InlineKeyboardButton[] array = new InlineKeyboardButton[3];
-                for (int a = 0; a < 3; a++)
+                var reset = 0;
+                var b = 0;
+
+                //Расчитываем размер масива
+                countListProducts = countListProducts - 3;
+                var arrycoll = countListProducts < 0 ? countListProducts + 3 : 3;
+
+                InlineKeyboardButton[] array = new InlineKeyboardButton[arrycoll];
+                for (a = schet; a < listSelect.Count; a++)
                 {
-                    array[a] = InlineKeyboardButton.WithCallbackData(text: $"{listSelect[a]}", callbackData: $"{listSelect[a]}");
+                    reset++;
+                    array[b] = InlineKeyboardButton.WithCallbackData(text: $"{listSelect[a]}", callbackData: $"{listSelect[a]}");
+                    schet++;
+                    b++;
+                    if (reset == 3) break;
                 }
-                inlineKeyboardButtons[i] = array.;
+                inlineKeyboardButtons[i] = array;
+
             }
-            
+
+            //Вывод кнопки возврата в категории
+            InlineKeyboardButton[] arrayBackCategory = new InlineKeyboardButton[1];
+            arrayBackCategory[0] = InlineKeyboardButton.WithCallbackData(text: $"<< Вернуться в категории", callbackData: $"category");
+            inlineKeyboardButtons[inlineKeyboardButtons.Length - 1] = arrayBackCategory;
+
             return inlineKeyboardButtons;
         }
 
