@@ -54,12 +54,27 @@ namespace Ordering_products.DB
                                 }
                             }
                         }
-                       
                     } 
                     else Console.WriteLine("Ошибка добавления данных в таблицу DB RegisteredUsers");
                     break;
 
                 case "OrderHistory":
+                    break;
+
+                case "ProductSave":
+                    //Строка добавления данных в DB таблица ProductSave
+                    if (values.Length == 2)//Добавление IdTelegram и Название продукта
+                    {
+                        command = new SqlCommand($"INSERT INTO ProductSave (IdTelegram, Product) VALUES ('{values[0]}', N'{values[1]}')", ConectionDB.Connection);
+
+                        if (command.ExecuteNonQuery() == 1) Console.WriteLine($"Сохранил продукт - {values[1]}");
+                    }
+                    else //Добавление количества продуктов в кг или штук
+                    {
+                        command = new SqlCommand($"UPDATE ProductSave SET Count = N'{values[0]}' WHERE IdTelegram = '{update.Message.Chat.Id.ToString()}' AND Count = '-1'", ConectionDB.Connection);
+
+                        if (command.ExecuteNonQuery() == 1) Console.WriteLine($"Сохранил количество - {values[0]}");
+                    }
                     break;
 
                 case "TableProducts":
@@ -115,13 +130,19 @@ namespace Ordering_products.DB
 
             return result;
         }
-
+        
+        /// <summary>
+        /// Метод получает все продукты из выбранной категории
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns>Возвращает список продуктов</returns>
         public static List<string> GetDataDB(string category)
         {
             List<string> selectDb = new List<string>(); 
             string result = string.Empty;
             //Открываем подключение
             ConectionDB.ConectDB();
+
             //Вытаскиваем все продукты по категории
             SqlDataReader dataReader = null;
             SqlCommand command = new SqlCommand($"SELECT NameProduct FROM TableProducts WHERE Catigory = N'{category}'", ConectionDB.Connection);
@@ -138,6 +159,28 @@ namespace Ordering_products.DB
             ConectionDB.DisconnectDB();
 
             return selectDb;
+        }
+
+        public static string CheckSaveProduct(string idTelegram)
+        {
+            // Открываем подключение
+            ConectionDB.ConectDB();
+            //Проверка есть ли продукт со значением -1 по заданному idTelegram
+            //SqlDataReader dataReader = null;
+            SqlCommand command = new SqlCommand($"SELECT Count FROM ProductSave WHERE IdTelegram = N'{idTelegram}' AND Count = N'-1'", ConectionDB.Connection);
+            string rez = null;
+            try
+            {
+                rez = command.ExecuteScalar().ToString();
+            }
+            catch (Exception)
+            {
+
+            }
+            
+            
+            ConectionDB.DisconnectDB();
+            return rez;
         }
     }
 }

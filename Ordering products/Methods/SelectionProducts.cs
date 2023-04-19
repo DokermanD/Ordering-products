@@ -14,22 +14,56 @@ namespace Ordering_products.Methods
     {
         public static void SelectProd(ITelegramBotClient botClient, Update update, string callbackData)
         {
-            switch (callbackData)
+            if (update.Type == UpdateType.CallbackQuery)//Ответ на кнопки коллбэк
             {
-                case "category":
-                case "ok":
+                switch (callbackData)
+                {
+                    case "category":
+                    //case "ok":
+                        //Вывод всех категорий для выбора
+                        SelectCategory(botClient, update);
+                        break;
+
+                    case "Фрукты":
+                    case "Овощи":
+                    case "Рыба":
+                        //Вывод всех продуктов из выбранной категории
+                        SelectProduct(botClient, update, callbackData);
+                        break;
+
+                    //Сохранение продукта в базу и запрос каличества в кг. или штук. (обработка нажатия на тпродукт)
+                    default:
+                        SaveSelectProduct(botClient, update, callbackData);
+                        break;
+                }
+            }
+            else
+            {
+                var rez = RequestsDB.CheckSaveProduct(update.Message.Chat.Id.ToString());
+                if (rez != null) 
+                {
+                    //Добавляем колличество к продукту (вводит юзер)
+                    RequestsDB.SetDataDB(update, "ProductSave", update.Message.Text);
+                    DeleteMessageOldCallback(update, botClient);
+                }
+                else
+                {
+                    DeleteMessageOldCallback(update, botClient);
                     //Вывод всех категорий для выбора
                     SelectCategory(botClient, update);
-                    break;
-
-                case "Фрукты":
-                case "Овощи":
-                case "Рыба":
-                    SelectProduct(botClient, update, callbackData);
-                    break;
-
-                    //TODO - обработка нажатия на тпродукт
+                }
+                
             }
+        }
+
+        private static void SaveSelectProduct(ITelegramBotClient botClient, Update update, string callbackData)
+        {
+            var idTelegram = update.CallbackQuery.Message.Chat.Id.ToString();
+            //Добавляем idTelegram и Название продукта в базу
+            RequestsDB.SetDataDB(update, "ProductSave", idTelegram, callbackData);
+
+            //Отправка сообщения в бота
+            botClient.SendTextMessageAsync(chatId: update.CallbackQuery.Message.Chat.Id.ToString(), text: "Введите пожалуйста нужное количество\r\nНапример:  5 кг.   или   5 шт. ");
            
         }
 
