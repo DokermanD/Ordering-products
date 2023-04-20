@@ -161,12 +161,16 @@ namespace Ordering_products.DB
             return selectDb;
         }
 
+        /// <summary>
+        /// Проверка есть ли продукт со значением -1 по заданному idTelegram
+        /// </summary>
+        /// <param name="idTelegram"></param>
+        /// <returns></returns>
         public static string CheckSaveProduct(string idTelegram)
         {
             // Открываем подключение
             ConectionDB.ConectDB();
             //Проверка есть ли продукт со значением -1 по заданному idTelegram
-            //SqlDataReader dataReader = null;
             SqlCommand command = new SqlCommand($"SELECT Count FROM ProductSave WHERE IdTelegram = N'{idTelegram}' AND Count = N'-1'", ConectionDB.Connection);
             string rez = null;
             try
@@ -175,12 +179,43 @@ namespace Ordering_products.DB
             }
             catch (Exception)
             {
-
             }
-            
-            
+                        
             ConectionDB.DisconnectDB();
             return rez;
+        }
+
+        /// <summary>
+        /// Проверка есть ли строка без даты доставки по заданному idTelegram
+        /// </summary>
+        /// <param name="idTelegram"></param>
+        /// <returns></returns>
+        public static string CheckArrangeDelivery(string idTelegram)
+        {
+            // Открываем подключение
+            ConectionDB.ConectDB();
+            //Проверка есть ли строка со значением -1 по заданному idTelegram
+            SqlCommand command = new SqlCommand($"SELECT Count FROM OrderHistory WHERE IdTelegram = N'{idTelegram}' AND DateDostavki = N'-1'", ConectionDB.Connection);
+            string rez = null;
+            try
+            {
+                rez = command.ExecuteScalar().ToString();
+            }
+            catch (Exception)
+            {
+            }
+
+            ConectionDB.DisconnectDB();
+            return rez;
+        }
+
+        public static void DeleteProduct(string idTelegram)
+        {
+            // Открываем подключение
+            ConectionDB.ConectDB();
+            //Проверка есть ли продукт со значением -1 по заданному idTelegram
+            SqlCommand command = new SqlCommand($"DELETE FROM ProductSave WHERE IdTelegram = N'{idTelegram}'", ConectionDB.Connection);
+            command.ExecuteNonQuery();
         }
     }
 }

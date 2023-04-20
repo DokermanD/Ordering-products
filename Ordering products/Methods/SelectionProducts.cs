@@ -19,7 +19,6 @@ namespace Ordering_products.Methods
                 switch (callbackData)
                 {
                     case "category":
-                    //case "ok":
                         //Вывод всех категорий для выбора
                         SelectCategory(botClient, update);
                         break;
@@ -31,6 +30,17 @@ namespace Ordering_products.Methods
                         SelectProduct(botClient, update, callbackData);
                         break;
 
+                    case "null"://Разделитель меню и продуктов
+                        break;
+
+                    case "delivery"://Оформление доставки
+
+                        break;
+                    case "reset"://Обнуление заказа с удалением из базы
+                        ResetSelectProduct(botClient, update, callbackData);
+                        break;
+
+
                     //Сохранение продукта в базу и запрос каличества в кг. или штук. (обработка нажатия на тпродукт)
                     default:
                         SaveSelectProduct(botClient, update, callbackData);
@@ -39,12 +49,20 @@ namespace Ordering_products.Methods
             }
             else
             {
-                var rez = RequestsDB.CheckSaveProduct(update.Message.Chat.Id.ToString());
-                if (rez != null) 
+                //Проверяем есть ли в базе ProductSave продукт с незаполненым полем количества
+                var rezSaveProduct = RequestsDB.CheckSaveProduct(update.Message.Chat.Id.ToString());
+                //Проверяем есть ли в базе OrderHistory строка с незаполненым полем дата доставки
+                var rezArrangeDelivery = RequestsDB.CheckArrangeDelivery(update.Message.Chat.Id.ToString());
+
+                if (rezSaveProduct != null) 
                 {
                     //Добавляем колличество к продукту (вводит юзер)
                     RequestsDB.SetDataDB(update, "ProductSave", update.Message.Text);
                     DeleteMessageOldCallback(update, botClient);
+                }
+                else if (rezArrangeDelivery != null)
+                {
+                    //Дописываем дату доставки
                 }
                 else
                 {
@@ -55,7 +73,36 @@ namespace Ordering_products.Methods
                 
             }
         }
+        /// <summary>
+        /// Удаление всех выбранных продуктов из базы по Id чата
+        /// </summary>
+        /// <param name="botClient"></param>
+        /// <param name="update"></param>
+        /// <param name="callbackData"></param>
+        private static void ResetSelectProduct(ITelegramBotClient botClient, Update update, string callbackData)
+        {
+            var idTelegram = update.CallbackQuery.Message.Chat.Id.ToString();
+            //Удаление всех выбранных продуктов из базы по Id чата
+            RequestsDB.DeleteProduct(idTelegram);
 
+            DeleteMessageOldCallback(update, botClient);
+            InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(new[]
+            {
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData(text: "Начать выбор продуктов", callbackData: "category")
+                }
+            });
+            //Сообщение о сбросе заказа
+            botClient.SendTextMessageAsync(chatId: update.CallbackQuery.Message.Chat.Id.ToString(), text: "Заказ был обнулён", replyMarkup: replyKeyboardMarkup);
+        }
+
+        /// <summary>
+        /// Сохранения в базу названия продукта
+        /// </summary>
+        /// <param name="botClient"></param>
+        /// <param name="update"></param>
+        /// <param name="callbackData"></param>
         private static void SaveSelectProduct(ITelegramBotClient botClient, Update update, string callbackData)
         {
             var idTelegram = update.CallbackQuery.Message.Chat.Id.ToString();
@@ -84,7 +131,7 @@ namespace Ordering_products.Methods
                     InlineKeyboardButton.WithCallbackData(text: "Рыба", callbackData: "Рыба")
                 }
             });
-
+                       
             //Отправка сообщения в бота
             if (update.Type == UpdateType.CallbackQuery)
             {
@@ -130,13 +177,13 @@ namespace Ordering_products.Methods
             //Получаем список продуктов из базы данных
             var listSelect = RequestsDB.GetDataDB(product);
 
-            InlineKeyboardButton[][] inlineKeyboardButtons = new InlineKeyboardButton[(int)Math.Ceiling((double)listSelect.Count / 3) + 1][];
+            InlineKeyboardButton[][] inlineKeyboardButtons = new InlineKeyboardButton[(int)Math.Ceiling((double)listSelect.Count / 3) + 3][];
 
             int a;
             int schet = 0;
             int countListProducts = listSelect.Count;
 
-            for (int i = 0; i < inlineKeyboardButtons.Length - 1; i++)
+            for (int i = 0; i < inlineKeyboardButtons.Length - 3; i++)
             {
                 var reset = 0;
                 var b = 0;
@@ -157,16 +204,24 @@ namespace Ordering_products.Methods
                 inlineKeyboardButtons[i] = array;
 
             }
+            //Вывод кнопки возврата в категории
+            InlineKeyboardButton[] arrayzona = new InlineKeyboardButton[1];
+            arrayzona[0] = InlineKeyboardButton.WithCallbackData(text: $"--------------------------------", callbackData: $"null");
+            inlineKeyboardButtons[inlineKeyboardButtons.Length - 3] = arrayzona;
 
             //Вывод кнопки возврата в категории
             InlineKeyboardButton[] arrayBackCategory = new InlineKeyboardButton[1];
             arrayBackCategory[0] = InlineKeyboardButton.WithCallbackData(text: $"<< Вернуться в категории", callbackData: $"category");
-            inlineKeyboardButtons[inlineKeyboardButtons.Length - 1] = arrayBackCategory;
+            inlineKeyboardButtons[inlineKeyboardButtons.Length - 2] = arrayBackCategory;
+
+            //Вывод кнопки возврата в категории
+            InlineKeyboardButton[] arrayFinaly = new InlineKeyboardButton[2];
+            arrayFinaly[0] = InlineKeyboardButton.WithCallbackData(text: $"✔ Оформить доставку", callbackData: $"delivery");
+            arrayFinaly[1] = InlineKeyboardButton.WithCallbackData(text: $"✖ Обнулить заказ", callbackData: $"reset");
+            inlineKeyboardButtons[inlineKeyboardButtons.Length - 1] = arrayFinaly;
 
             return inlineKeyboardButtons;
         }
-
-
 
         /// <summary>
         /// Метод удаляет 1 последних сообщения
