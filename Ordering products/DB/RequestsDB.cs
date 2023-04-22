@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
+using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Ordering_products.DB
 {
@@ -59,6 +61,26 @@ namespace Ordering_products.DB
                     break;
 
                 case "OrderHistory":
+
+                    //Строка добавления данных в DB таблица OrderHistory
+                    command = new SqlCommand(
+                    "INSERT INTO OrderHistory(IdZakaza, TelegramID, NameOrganization, NameUser, Products, DateZakaza, AdresDostavki)" +
+                    $" VALUES (N'{values[0]}',N'{values[1]}', N'{values[2]}', N'{values[3]}', N'{values[4]}', N'{values[5]}', N'{values[6]}')", ConectionDB.Connection);
+
+                    //Выполнения запроса на добавление 
+                    if (command.ExecuteNonQuery() == 1) Console.WriteLine("Данные успешно добавлены в таблицу DB OrderHistory");
+                    else Console.WriteLine("Ошибка добавления данных в таблицу DB OrderHistory");
+                    break;
+
+                case "OrderHistoryUpdate":
+
+                    //Строка добавления данных в DB таблица OrderHistory
+                    command = new SqlCommand(
+                    $"UPDATE OrderHistory SET DateDostavki = N'{values[0]}' WHERE TelegramID = '{update.Message.Chat.Id.ToString()}' AND DateDostavki = '-1'", ConectionDB.Connection);
+
+                    //Выполнения запроса на добавление 
+                    if (command.ExecuteNonQuery() == 1) Console.WriteLine("Данные успешно добавлены в таблицу DB OrderHistory");
+                    else Console.WriteLine("Ошибка добавления данных в таблицу DB OrderHistory");
                     break;
 
                 case "ProductSave":
@@ -195,7 +217,7 @@ namespace Ordering_products.DB
             // Открываем подключение
             ConectionDB.ConectDB();
             //Проверка есть ли строка со значением -1 по заданному idTelegram
-            SqlCommand command = new SqlCommand($"SELECT Count FROM OrderHistory WHERE IdTelegram = N'{idTelegram}' AND DateDostavki = N'-1'", ConectionDB.Connection);
+            SqlCommand command = new SqlCommand($"SELECT DateDostavki FROM OrderHistory WHERE TelegramID = N'{idTelegram}' AND DateDostavki = N'-1'", ConectionDB.Connection);
             string rez = null;
             try
             {
@@ -208,7 +230,10 @@ namespace Ordering_products.DB
             ConectionDB.DisconnectDB();
             return rez;
         }
-
+        /// <summary>
+        /// Удаление всех выбранных продуктов из базы по Id чата
+        /// </summary>
+        /// <param name="idTelegram"></param>
         public static void DeleteProduct(string idTelegram)
         {
             // Открываем подключение
@@ -216,6 +241,106 @@ namespace Ordering_products.DB
             //Проверка есть ли продукт со значением -1 по заданному idTelegram
             SqlCommand command = new SqlCommand($"DELETE FROM ProductSave WHERE IdTelegram = N'{idTelegram}'", ConectionDB.Connection);
             command.ExecuteNonQuery();
+
+            ConectionDB.DisconnectDB();
+        }
+
+        /// <summary>
+        /// Метод выводит собранный заказ для подтверждения
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="botClient"></param>
+        internal static void OrderPreview(Update update, ITelegramBotClient botClient)
+        {
+            string spisok = null;
+            //Открываем подключение
+            ConectionDB.ConectDB();
+
+            //Вытаскиваем все продукты по категории
+            SqlDataReader dataReader = null;
+            SqlCommand command = new SqlCommand($"SELECT Products FROM OrderHistory WHERE TelegramID = N'{update.Message.Chat.Id.ToString()}' AND Status = '-1'", ConectionDB.Connection);
+            dataReader = command.ExecuteReader();
+
+            while (dataReader.Read())
+            {
+                spisok = Convert.ToString(dataReader[0]);
+            }
+
+            //Закрываем датаридер
+            dataReader.Close();
+            //Закрываем подключение
+            ConectionDB.DisconnectDB();
+
+            //Выводим список и кнопку подтвердить
+            SelectionProducts.DeleteMessageOldCallback(update, botClient);
+            InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(new[]
+            {
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData(text: "Подтвердить оформление заказа", callbackData: "finish")
+                }
+            });
+            botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: $"Ваш заказ:\n\n{spisok}", replyMarkup: replyKeyboardMarkup);
+        }
+
+        internal static void OrderFinish(Update update, ITelegramBotClient botClient)
+        {
+            string IdZakaza = null;
+            string NameOrganization = null;
+            string NameUser = null;
+            string Products = null;
+            string DateZakaza = null;
+            string AdresDostavki = null;
+            string DateDostavki = null;
+
+            string tgId = update.CallbackQuery.Message.Chat.Id.ToString();
+            //Открываем подключение
+            ConectionDB.ConectDB();
+
+            //Вытаскиваем все продукты по категории
+            SqlDataReader dataReader = null;
+            SqlCommand command = new SqlCommand($"SELECT IdZakaza, NameOrganization, NameUser, Products, DateZakaza, AdresDostavki, DateDostavki FROM OrderHistory WHERE TelegramID = N'{tgId}' AND Status = '-1'", ConectionDB.Connection);
+            dataReader = command.ExecuteReader();
+
+            while (dataReader.Read())
+            {
+                IdZakaza = Convert.ToString(dataReader[0]);
+                NameOrganization = Convert.ToString(dataReader[1]);
+                NameUser = Convert.ToString(dataReader[2]);
+                Products = Convert.ToString(dataReader[3]);
+                DateZakaza = Convert.ToString(dataReader[4]);
+                AdresDostavki = Convert.ToString(dataReader[5]);
+                DateDostavki = Convert.ToString(dataReader[6]);
+            }
+
+            //Закрываем датаридер
+            dataReader.Close();
+            //Закрываем подключение
+            ConectionDB.DisconnectDB();
+
+            //Выводим финальный список
+            SelectionProducts.DeleteMessageOldCallback(update, botClient);
+            RequestsDB.DeleteProduct(tgId);
+
+            InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(new[]
+            {
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData(text: "Начать выбор продуктов", callbackData: "category")
+                }
+            });
+            botClient.SendTextMessageAsync(tgId, text:
+                $"Заказ №{IdZakaza}\n" +
+                $"От {DateZakaza}\n\n"+
+                $"Заказчик:\n" +
+                $"{NameUser}\n" +
+                $"{NameOrganization}\n\n" +
+                $"Адрес доставки:\n" +
+                $"{AdresDostavki}\n" +
+                $"Дата доставки:\n" +
+                $"{DateDostavki}\n\n" +
+                $"Список продуктов:\n" +
+                $"{Products}", replyMarkup: replyKeyboardMarkup);
         }
     }
 }

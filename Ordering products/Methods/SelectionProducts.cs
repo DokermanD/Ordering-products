@@ -7,6 +7,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Ordering_products.DB;
 using Newtonsoft.Json.Linq;
+using System.Data.SqlClient;
 
 namespace Ordering_products.Methods
 {
@@ -34,10 +35,14 @@ namespace Ordering_products.Methods
                         break;
 
                     case "delivery"://Оформление доставки
-
+                        ArrangeDelivery.SaveOrdersFinish(botClient, update, callbackData);
                         break;
                     case "reset"://Обнуление заказа с удалением из базы
                         ResetSelectProduct(botClient, update, callbackData);
+                        break;
+
+                    case "finish"://Итоговый вывод заказа со всеми данными
+                        RequestsDB.OrderFinish(update, botClient);
                         break;
 
 
@@ -63,6 +68,7 @@ namespace Ordering_products.Methods
                 else if (rezArrangeDelivery != null)
                 {
                     //Дописываем дату доставки
+                    SetDateDelivery(botClient, update, update.Message.Text);
                 }
                 else
                 {
@@ -73,6 +79,18 @@ namespace Ordering_products.Methods
                 
             }
         }
+
+        private static void SetDateDelivery(ITelegramBotClient botClient, Update update, string text)
+        {
+            //Вкидываем дату доставки в заказ
+            RequestsDB.SetDataDB(update, "OrderHistoryUpdate", text);
+            DeleteMessageOldCallback(update, botClient);
+
+            // Выводим педпросмотр заказа с кнопкай подтвердить заказ
+            RequestsDB.OrderPreview(update, botClient);
+
+        }
+
         /// <summary>
         /// Удаление всех выбранных продуктов из базы по Id чата
         /// </summary>
