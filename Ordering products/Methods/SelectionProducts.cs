@@ -8,6 +8,7 @@ using Telegram.Bot.Types.Enums;
 using Ordering_products.DB;
 using Newtonsoft.Json.Linq;
 using System.Data.SqlClient;
+using System.Threading;
 
 namespace Ordering_products.Methods
 {
@@ -22,6 +23,10 @@ namespace Ordering_products.Methods
                     case "category":
                         //Вывод всех категорий для выбора
                         SelectCategory(botClient, update);
+                        break;
+                    case "categoryFinali":
+                        //Вывод всех категорий для выбора
+                        SelectCategoryFinali(botClient, update);
                         break;
 
                     case "Фрукты":
@@ -48,7 +53,9 @@ namespace Ordering_products.Methods
 
                     //Сохранение продукта в базу и запрос каличества в кг. или штук. (обработка нажатия на тпродукт)
                     default:
-                        SaveSelectProduct(botClient, update, callbackData);
+                        var rezSaveProduct = RequestsDB.CheckSaveProduct(update.CallbackQuery.Message.Chat.Id.ToString());
+                        if (rezSaveProduct == null) SaveSelectProduct(botClient, update, callbackData);
+                                          
                         break;
                 }
             }
@@ -161,6 +168,37 @@ namespace Ordering_products.Methods
             }
             
         }
+        /// <summary>
+        /// Предложение выбора категорий после финального вывода заказа
+        /// </summary>
+        /// <param name="botClient"></param>
+        /// <param name="update"></param>
+        public static void SelectCategoryFinali(ITelegramBotClient botClient, Update update)
+        {
+            //Редактируем сообщение после нажатия кнопки Начать выбор продукта, удаляем саму кнопку под сообщением
+            botClient.EditMessageReplyMarkupAsync(chatId: update.CallbackQuery.Message.Chat.Id.ToString(), update.CallbackQuery.Message.MessageId);
+
+            InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup(new[]
+            {
+                new []
+                {
+                    InlineKeyboardButton.WithCallbackData(text: "Фрукты", callbackData: "Фрукты"),
+                    InlineKeyboardButton.WithCallbackData(text: "Овощи", callbackData: "Овощи"),
+                    InlineKeyboardButton.WithCallbackData(text: "Рыба", callbackData: "Рыба")
+                }
+            });
+
+            //Отправка сообщения в бота
+            if (update.Type == UpdateType.CallbackQuery)
+            {
+                botClient.SendTextMessageAsync(chatId: update.CallbackQuery.Message.Chat.Id.ToString(), text: "Выберите пожалуйста категорию продукта.", replyMarkup: replyKeyboardMarkup);
+            }
+            else
+            {
+                botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id.ToString(), text: "Выберите пожалуйста категорию продукта.", replyMarkup: replyKeyboardMarkup);
+            }
+
+        }
 
         /// <summary>
         /// Метод выводит все продукты в выбранной категории
@@ -251,7 +289,7 @@ namespace Ordering_products.Methods
             if (update.Type == UpdateType.CallbackQuery)
             {
                 botClient.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId);
-                botClient.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId-1);
+                //botClient.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId-1);
             }
             else
             {

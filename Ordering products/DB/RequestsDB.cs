@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -193,11 +194,15 @@ namespace Ordering_products.DB
             // Открываем подключение
             ConectionDB.ConectDB();
             //Проверка есть ли продукт со значением -1 по заданному idTelegram
-            SqlCommand command = new SqlCommand($"SELECT Count FROM ProductSave WHERE IdTelegram = N'{idTelegram}' AND Count = N'-1'", ConectionDB.Connection);
+            SqlCommand command = new SqlCommand($"SELECT COUNT(*) FROM ProductSave WHERE IdTelegram = N'{idTelegram}' AND Count = N'-1'", ConectionDB.Connection);
             string rez = null;
             try
             {
                 rez = command.ExecuteScalar().ToString();
+                if (Convert.ToInt32(rez) == 0)
+                {
+                    rez = null;
+                }
             }
             catch (Exception)
             {
@@ -222,6 +227,7 @@ namespace Ordering_products.DB
             try
             {
                 rez = command.ExecuteScalar().ToString();
+                
             }
             catch (Exception)
             {
@@ -326,7 +332,7 @@ namespace Ordering_products.DB
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData(text: "Начать выбор продуктов", callbackData: "category")
+                    InlineKeyboardButton.WithCallbackData(text: "Начать выбор продуктов", callbackData: "categoryFinali")
                 }
             });
             botClient.SendTextMessageAsync(tgId, text:
@@ -341,6 +347,14 @@ namespace Ordering_products.DB
                 $"{DateDostavki}\n\n" +
                 $"Список продуктов:\n" +
                 $"{Products}", replyMarkup: replyKeyboardMarkup);
+
+            //TODO убрать -1 из статуса
+            //Открываем подключение
+            ConectionDB.ConectDB();
+            command = new SqlCommand($"UPDATE OrderHistory SET Status = N'Ok' WHERE TelegramID = N'{tgId}' AND Status = '-1'", ConectionDB.Connection);
+
+            if (command.ExecuteNonQuery() == 1) Console.WriteLine($"Заказ оформлен");
+            ConectionDB.DisconnectDB();
         }
     }
 }

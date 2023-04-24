@@ -51,9 +51,6 @@ namespace Ordering_products.Methods
             SelectionProducts.DeleteMessageOldCallback(update, botClient);
             botClient.SendTextMessageAsync(chatId: update.CallbackQuery.Message.Chat.Id.ToString(),
                 text: "Укажите пожалуйста дату доставки продуктов.\nВ формате (дд.мм.гггг  чч:мм)\nНапример: 21.10.2023 12:30");
-
-            //Чистим временный список продуктов по Id
-            //
         }
 
         
