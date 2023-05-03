@@ -57,7 +57,7 @@ namespace Ordering_products.DB
             }
             else
             {
-                Console.WriteLine("Не закрылось подключение к базы данных!");
+                Console.WriteLine("Не закрылось подключение к базе данных!");
             }
         }
 

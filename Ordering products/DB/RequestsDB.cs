@@ -283,7 +283,8 @@ namespace Ordering_products.DB
             {
                 new []
                 {
-                    InlineKeyboardButton.WithCallbackData(text: "Подтвердить оформление заказа", callbackData: "finish")
+                    InlineKeyboardButton.WithCallbackData(text: "Подтвердить оформление заказа", callbackData: "finish"),
+                    InlineKeyboardButton.WithCallbackData(text: "Продолжить выбор продуктов", callbackData: "category")
                 }
             });
             botClient.SendTextMessageAsync(chatId: update.Message.Chat.Id, text: $"Ваш заказ:\n\n{spisok}", replyMarkup: replyKeyboardMarkup);
